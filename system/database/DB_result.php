@@ -275,8 +275,6 @@ class CI_DB_result {
 	 */
 	public function result_array()
 	{
-		// if($this->;)
-
 		if (count($this->result_array) > 0)
 		{
 			return $this->result_array;

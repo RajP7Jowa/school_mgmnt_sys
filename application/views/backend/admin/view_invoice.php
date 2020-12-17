@@ -109,6 +109,8 @@
 									echo get_phrase('check');
 								if ($row2['method'] == 3)
 									echo get_phrase('card');
+								if ($row2['method'] == 'paypal')
+									echo 'paypal';
 							?>
 							</td>
 							<td class="text-center"><?php echo $row2['amount']; ?></td>

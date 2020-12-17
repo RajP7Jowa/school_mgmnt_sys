@@ -57,10 +57,8 @@ $autoload['packages'] = array();
 | in the controller:
 |
 |	$autoload['libraries'] = array('user_agent' => 'ua');
-
-$autoload['libraries'] = array('pagination', 'xmlrpc' , 'form_validation', 'email','upload','paypal');
 */
-$autoload['libraries'] = array('pagination', 'xmlrpc' , 'form_validation', 'email','upload');
+$autoload['libraries'] = array('pagination', 'xmlrpc' , 'form_validation', 'email','upload','paypal');
 
 /*
 | -------------------------------------------------------------------
@@ -134,4 +132,4 @@ $autoload['language'] = array();
 |
 |	$autoload['model'] = array('first_model' => 'first');
 */
-$autoload['model'] = array('email_model' , 'crud_model');
+$autoload['model'] = array('email_model' , 'crud_model' , 'sms_model');

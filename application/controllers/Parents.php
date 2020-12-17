@@ -177,63 +177,63 @@ class Parents extends CI_Controller
     function invoice($student_id = '' , $param1 = '', $param2 = '', $param3 = '')
     {
         //if($this->session->userdata('parent_login')!=1)redirect(base_url() , 'refresh');
-        // if ($param1 == 'make_payment') {
-        //     $invoice_id      = $this->input->post('invoice_id');
-        //     $system_settings = $this->db->get_where('settings', array(
-        //         'type' => 'paypal_email'
-        //     ))->row();
-        //     $invoice_details = $this->db->get_where('invoice', array(
-        //         'invoice_id' => $invoice_id
-        //     ))->row();
+        if ($param1 == 'make_payment') {
+            $invoice_id      = $this->input->post('invoice_id');
+            $system_settings = $this->db->get_where('settings', array(
+                'type' => 'paypal_email'
+            ))->row();
+            $invoice_details = $this->db->get_where('invoice', array(
+                'invoice_id' => $invoice_id
+            ))->row();
             
-        //     /****TRANSFERRING USER TO PAYPAL TERMINAL****/
-        //     $this->paypal->add_field('rm', 2);
-        //     $this->paypal->add_field('no_note', 0);
-        //     $this->paypal->add_field('item_name', $invoice_details->title);
-        //     $this->paypal->add_field('amount', $invoice_details->amount);
-        //     $this->paypal->add_field('custom', $invoice_details->invoice_id);
-        //     $this->paypal->add_field('business', $system_settings->description);
-        //     $this->paypal->add_field('notify_url', base_url() . 'index.php?parents/invoice/paypal_ipn');
-        //     $this->paypal->add_field('cancel_return', base_url() . 'index.php?parents/invoice/paypal_cancel');
-        //     $this->paypal->add_field('return', base_url() . 'index.php?parents/invoice/paypal_success');
+            /****TRANSFERRING USER TO PAYPAL TERMINAL****/
+            $this->paypal->add_field('rm', 2);
+            $this->paypal->add_field('no_note', 0);
+            $this->paypal->add_field('item_name', $invoice_details->title);
+            $this->paypal->add_field('amount', $invoice_details->amount);
+            $this->paypal->add_field('custom', $invoice_details->invoice_id);
+            $this->paypal->add_field('business', $system_settings->description);
+            $this->paypal->add_field('notify_url', base_url() . 'index.php?parents/invoice/paypal_ipn');
+            $this->paypal->add_field('cancel_return', base_url() . 'index.php?parents/invoice/paypal_cancel');
+            $this->paypal->add_field('return', base_url() . 'index.php?parents/invoice/paypal_success');
             
-        //     $this->paypal->submit_paypal_post();
-        //     // submit the fields to paypal
-        // }
-        // if ($param1 == 'paypal_ipn') {
-        //     if ($this->paypal->validate_ipn() == true) {
-        //         $ipn_response = '';
-        //         foreach ($_POST as $key => $value) {
-        //             $value = urlencode(stripslashes($value));
-        //             $ipn_response .= "\n$key=$value";
-        //         }
-        //         $data['payment_details']   = $ipn_response;
-        //         $data['payment_timestamp'] = strtotime(date("m/d/Y"));
-        //         $data['payment_method']    = 'paypal';
-        //         $data['status']            = 'paid';
-        //         $invoice_id                = $_POST['custom'];
-        //         $this->db->where('invoice_id', $invoice_id);
-        //         $this->db->update('invoice', $data);
+            $this->paypal->submit_paypal_post();
+            // submit the fields to paypal
+        }
+        if ($param1 == 'paypal_ipn') {
+            if ($this->paypal->validate_ipn() == true) {
+                $ipn_response = '';
+                foreach ($_POST as $key => $value) {
+                    $value = urlencode(stripslashes($value));
+                    $ipn_response .= "\n$key=$value";
+                }
+                $data['payment_details']   = $ipn_response;
+                $data['payment_timestamp'] = strtotime(date("m/d/Y"));
+                $data['payment_method']    = 'paypal';
+                $data['status']            = 'paid';
+                $invoice_id                = $_POST['custom'];
+                $this->db->where('invoice_id', $invoice_id);
+                $this->db->update('invoice', $data);
 
-        //         $data2['method']       =   'paypal';
-        //         $data2['invoice_id']   =   $_POST['custom'];
-        //         $data2['timestamp']    =   strtotime(date("m/d/Y"));
-        //         $data2['payment_type'] =   'income';
-        //         $data2['title']        =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->title;
-        //         $data2['description']  =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->description;
-        //         $data2['student_id']   =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->student_id;
-        //         $data2['amount']       =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->amount;
-        //         $this->db->insert('payment' , $data2);
-        //     }
-        // }
-        // if ($param1 == 'paypal_cancel') {
-        //     $this->session->set_flashdata('flash_message', get_phrase('payment_cancelled'));
-        //     redirect(base_url() . 'index.php?parents/invoice/' . $student_id, 'refresh');
-        // }
-        // if ($param1 == 'paypal_success') {
-        //     $this->session->set_flashdata('flash_message', get_phrase('payment_successfull'));
-        //     redirect(base_url() . 'index.php?parents/invoice/' . $student_id, 'refresh');
-        // }
+                $data2['method']       =   'paypal';
+                $data2['invoice_id']   =   $_POST['custom'];
+                $data2['timestamp']    =   strtotime(date("m/d/Y"));
+                $data2['payment_type'] =   'income';
+                $data2['title']        =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->title;
+                $data2['description']  =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->description;
+                $data2['student_id']   =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->student_id;
+                $data2['amount']       =   $this->db->get_where('invoice' , array('invoice_id' => $data2['invoice_id']))->row()->amount;
+                $this->db->insert('payment' , $data2);
+            }
+        }
+        if ($param1 == 'paypal_cancel') {
+            $this->session->set_flashdata('flash_message', get_phrase('payment_cancelled'));
+            redirect(base_url() . 'index.php?parents/invoice/' . $student_id, 'refresh');
+        }
+        if ($param1 == 'paypal_success') {
+            $this->session->set_flashdata('flash_message', get_phrase('payment_successfull'));
+            redirect(base_url() . 'index.php?parents/invoice/' . $student_id, 'refresh');
+        }
         $parent_profile         = $this->db->get_where('parent', array(
             'parent_id' => $this->session->userdata('parent_id')
         ))->row();

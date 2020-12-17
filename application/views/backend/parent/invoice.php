@@ -40,6 +40,7 @@
                     		<th><div><?php echo get_phrase('amount');?></div></th>
                     		<th><div><?php echo get_phrase('status');?></div></th>
                     		<th><div><?php echo get_phrase('date');?></div></th>
+                    		<th><div><?php echo get_phrase('options');?></div></th>
 						</tr>
 					</thead>
                     <tbody>
@@ -58,16 +59,16 @@
 								<span class="label label-<?php if($row2['status']=='paid')echo 'success';else echo 'danger';?>"><?php echo $row2['status'];?></span>
 							</td>
 							<td><?php echo date('d M,Y', $row2['creation_timestamp']);?></td>
-							<!-- <td>
-                            < ?php echo form_open(base_url() . 'index.php?parents/invoice/' . $row['student_id'] . '/make_payment');?>
-                                	<input type="hidden" name="invoice_id" value="< ?php echo $row2['invoice_id'];?>" />
-                                		<button type="submit" class="btn btn-info" < ?php if($row2['status'] == 'paid'):?> disabled="disabled"< ?php endif;?>>
+							<td>
+                            <?php echo form_open(base_url() . 'index.php?parents/invoice/' . $row['student_id'] . '/make_payment');?>
+                                	<input type="hidden" name="invoice_id" value="<?php echo $row2['invoice_id'];?>" />
+                                		<button type="submit" class="btn btn-info" <?php if($row2['status'] == 'paid'):?> disabled="disabled"<?php endif;?>>
                                             <i class="fa fa-paypal"></i> Pay with paypal
                                         </button>
                                 </form>
                                 
                             
-        					</td> -->
+        					</td>
                         </tr>
                         <?php endforeach;?>
                     </tbody>

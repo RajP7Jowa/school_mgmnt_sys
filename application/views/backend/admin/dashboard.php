@@ -21,11 +21,8 @@
 									for ( $i = 1; $i <= $days; $i++ ) {
 										$timestamp = strtotime( $i . '-' . $month . '-' . $year[ 0 ] );
 										$this->db->group_by( 'timestamp' );
-										try {
-											$income = $this->db->get_where( 'payment', array('year' => $running_year, 'timestamp' => $timestamp ) )->result_array();
-										} catch (\Throwable $th) {
-											$income = 0;
-										}
+										$income = $this->db->get_where( 'payment', array('year' => $running_year, 'timestamp' => $timestamp ) )->result_array();
+
 										foreach ( $income as $row ):
 										$totalincome = $totalincome + $row[ 'amount' ] ;
 										endforeach;

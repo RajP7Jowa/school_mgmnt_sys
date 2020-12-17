@@ -86,16 +86,16 @@
 						</div>
 
 						<hr class="solid">
-<!-- 
+
 						<div class="text-center">
-							<a href="< ?php echo base_url();?>index.php?login/forgot_password">
-								< ?php echo get_phrase('forgot_your_password');?> ?
+							<a href="<?php echo base_url();?>index.php?login/forgot_password">
+								<?php echo get_phrase('forgot_your_password');?> ?
 							</a>
-						</div> -->
+						</div>
 					</form>
 				</div>
 				<p class="text-center text-muted mt-md mb-md">
-					© <?php echo date('Y'); ?> <a href="https://www.facebook.com/RajP7Jowa"> Raj </a>
+					<?php echo $this->db->get_where('settings' , array('type' =>'footer_text'))->row()->description;?>
 				</p>
 			</div>
 

@@ -45,13 +45,29 @@
                       </div>
                   </div>
                     
-                  <!-- <div class="form-group">
-                      <label  class="col-sm-3 control-label">< ?php echo get_phrase('paypal_email');?></label>
+                  <div class="form-group">
+                      <label  class="col-sm-3 control-label"><?php echo get_phrase('paypal_email');?></label>
                       <div class="col-sm-9">
                           <input type="text" class="form-control" name="paypal_email" 
-                              value="< ?php echo $this->db->get_where('settings' , array('type' =>'paypal_email'))->row()->description;?>">
+                              value="<?php echo $this->db->get_where('settings' , array('type' =>'paypal_email'))->row()->description;?>">
                       </div>
-                  </div> -->
+                  </div>
+                    
+                  <div class="form-group">
+                      <label  class="col-sm-3 control-label"><?php echo get_phrase('currency');?></label>
+                      <div class="col-sm-9">
+                          <input type="text" class="form-control" name="currency" 
+                              value="<?php echo $this->db->get_where('settings' , array('type' =>'currency'))->row()->description;?>">
+                      </div>
+                  </div>
+                    
+                  <div class="form-group">
+                      <label  class="col-sm-3 control-label">Footer Text</label>
+                      <div class="col-sm-9">
+                          <input type="text" class="form-control" name="footer_text" 
+                              value="<?php echo $this->db->get_where('settings' , array('type' =>'footer_text'))->row()->description;?>">
+                      </div>
+                  </div>
                     
                   <div class="form-group">
                       <label  class="col-sm-3 control-label"><?php echo get_phrase('system_email');?></label>
@@ -77,7 +93,26 @@
                       </div>
                   </div>
                     
+                  <div class="form-group">
+                      <label  class="col-sm-3 control-label"><?php echo get_phrase('language');?></label>
+                      <div class="col-sm-9">
+                          <select name="language" class="form-control" data-plugin-selectTwo data-width="100%" data-plugin-options='{ "minimumResultsForSearch": -1 }'>
+							<?php
+								$fields = $this->db->list_fields('language');
+								foreach ($fields as $field)
+								{
+									if ($field == 'phrase_id' || $field == 'phrase')continue;
 
+									$current_default_language	=	$this->db->get_where('settings' , array('type'=>'language'))->row()->description;
+									?>
+									<option value="<?php echo $field;?>"
+										<?php if ($current_default_language == $field)echo 'selected';?>> <?php echo ucfirst($field);?> </option>
+								<?php
+								}
+								?>
+                           </select>
+                      </div>
+                  </div>
                 </div>
                 
 				<footer class="panel-footer">

@@ -791,6 +791,57 @@ class Admin extends CI_Controller
         $this->load->view('backend/index', $page_data);
     }
 
+    /****** SEND EXAM MARKS VIA SMS ********/
+    function exam_marks_sms($param1 = '' , $param2 = '')
+    {
+        if ($this->session->userdata('admin_login') != 1)
+            redirect(base_url(), 'refresh');
+
+        if ($param1 == 'send_sms') {
+
+            $exam_id    =   $this->input->post('exam_id');
+            $class_id   =   $this->input->post('class_id');
+            $receiver   =   $this->input->post('receiver');
+			$year = $this->db->get_where('settings' , array('type' => 'running_year'))->row()->description;
+
+            // get all the students of the selected class
+            $students = $this->db->get_where('enroll' , array(
+                'class_id' => $class_id,
+                    'year' => $year ))->result_array();
+            // get the marks of the student for selected exam
+            foreach ($students as $row) {
+                if ($receiver == 'student')
+                    $receiver_phone = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->phone;
+                if ($receiver == 'parent') {
+                    $parent_id =  $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->parent_id;
+                    if($parent_id != '') {
+                        $receiver_phone = $this->db->get_where('parent' , array('parent_id' => $parent_id))->row()->phone;
+                    }
+                }
+                
+
+				$this->db->where('exam_id' , $exam_id);
+                $this->db->where('student_id' , $row['student_id']);
+                $marks = $this->db->get_where('mark' , array('year' => $year))->result_array();
+                $message = '';
+                foreach ($marks as $row2) {
+                    $subject       = $this->db->get_where('subject' , array('subject_id' => $row2['subject_id']))->row()->name;
+                    $mark_obtained = $row2['mark_obtained'];  
+                    $message      .= $row2['student_id'] . $subject . ' : ' . $mark_obtained . ' , ';
+                    
+                }
+                // send sms
+                $this->sms_model->send_sms( $message , $receiver_phone );
+            }
+            $this->session->set_flashdata('flash_message' , get_phrase('message_sent'));
+            redirect(base_url() . 'index.php?admin/exam_marks_sms' , 'refresh');
+        }
+                
+        $page_data['page_name']  = 'exam_marks_sms';
+        $page_data['page_title'] = get_phrase('send_marks_by_sms');
+        $this->load->view('backend/index', $page_data);
+    }
+
     /****MANAGE EXAM MARKS*****/
     function marks2($exam_id = '', $class_id = '', $subject_id = '')
     {
@@ -1157,6 +1208,7 @@ class Admin extends CI_Controller
     function attendance_update($class_id = '' , $section_id = '' , $timestamp = '')
     {
         $running_year = $this->db->get_where('settings' , array('type' => 'running_year'))->row()->description;
+        $active_sms_service = $this->db->get_where('settings' , array('type' => 'active_sms_service'))->row()->description;
         $attendance_of_students = $this->db->get_where('attendance' , array(
             'class_id'=>$class_id,'section_id'=>$section_id,'year'=>$running_year,'timestamp'=>$timestamp
         ))->result_array();
@@ -1164,6 +1216,17 @@ class Admin extends CI_Controller
             $attendance_status = $this->input->post('status_'.$row['attendance_id']);
             $this->db->where('attendance_id' , $row['attendance_id']);
             $this->db->update('attendance' , array('status' => $attendance_status));
+
+            if ($attendance_status == 2) {
+
+                if ($active_sms_service != '' || $active_sms_service != 'disabled') {
+                    $student_name   = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->name;
+                    $parent_id      = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->parent_id;
+                    $receiver_phone = $this->db->get_where('parent' , array('parent_id' => $parent_id))->row()->phone;
+                    $message        = 'Your child' . ' ' . $student_name . 'is absent today.';
+                    $this->sms_model->send_sms($message,$receiver_phone);
+                }
+            }
         }
         $this->session->set_flashdata('flash_message' , get_phrase('attendance_updated'));
         redirect(base_url().'index.php?admin/manage_attendance_view/'.$class_id.'/'.$section_id.'/'.$timestamp , 'refresh');
@@ -1175,6 +1238,7 @@ class Admin extends CI_Controller
 		if($this->session->userdata('admin_login')!=1)
             redirect(base_url() , 'refresh');
 
+        $active_sms_service = $this->db->get_where('settings' , array('type' => 'active_sms_service'))->row()->description;
         $running_year = $this->db->get_where('settings' , array('type' => 'running_year'))->row()->description;
 
 		
@@ -1202,6 +1266,17 @@ class Admin extends CI_Controller
                 $this->db->where('session' , $session);
 
                 $this->db->update('attendance' , array('status' => $attendance_status));
+
+                if ($attendance_status == 2) {
+
+                    if ($active_sms_service != '' || $active_sms_service != 'disabled') {
+                        $student_name   = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->name;
+                        $parent_id      = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->parent_id;
+                        $receiver_phone = $this->db->get_where('parent' , array('parent_id' => $parent_id))->row()->phone;
+                        $message        = 'Your child' . ' ' . $student_name . 'is absent today.';
+                        $this->sms_model->send_sms($message,$receiver_phone);
+                    }
+                }
 
             }
 
@@ -1630,6 +1705,31 @@ class Admin extends CI_Controller
             $data['create_timestamp'] = strtotime($this->input->post('create_timestamp'));
             $this->db->insert('noticeboard', $data);
 
+            $check_sms_send = $this->input->post('check_sms');
+
+            if ($check_sms_send == 1) {
+                // sms sending configurations
+
+                $parents  = $this->db->get('parent')->result_array();
+                $students = $this->db->get('student')->result_array();
+                $teachers = $this->db->get('teacher')->result_array();
+                $date     = $this->input->post('create_timestamp');
+                $message  = $data['notice_title'] . ' ';
+                $message .= get_phrase('on') . ' ' . $date;
+                foreach($parents as $row) {
+                    $reciever_phone = $row['phone'];
+                    $this->sms_model->send_sms($message , $reciever_phone);
+                }
+                foreach($students as $row) {
+                    $reciever_phone = $row['phone'];
+                    $this->sms_model->send_sms($message , $reciever_phone);
+                }
+                foreach($teachers as $row) {
+                    $reciever_phone = $row['phone'];
+                    $this->sms_model->send_sms($message , $reciever_phone);
+                }
+            }
+
             $this->session->set_flashdata('flash_message' , get_phrase('data_added_successfully'));
             redirect(base_url() . 'index.php?admin/noticeboard/', 'refresh');
         }
@@ -1639,6 +1739,31 @@ class Admin extends CI_Controller
             $data['create_timestamp'] = strtotime($this->input->post('create_timestamp'));
             $this->db->where('notice_id', $param2);
             $this->db->update('noticeboard', $data);
+
+            $check_sms_send = $this->input->post('check_sms');
+
+            if ($check_sms_send == 1) {
+                // sms sending configurations
+
+                $parents  = $this->db->get('parent')->result_array();
+                $students = $this->db->get('student')->result_array();
+                $teachers = $this->db->get('teacher')->result_array();
+                $date     = $this->input->post('create_timestamp');
+                $message  = $data['notice_title'] . ' ';
+                $message .= get_phrase('on') . ' ' . $date;
+                foreach($parents as $row) {
+                    $reciever_phone = $row['phone'];
+                    $this->sms_model->send_sms($message , $reciever_phone);
+                }
+                foreach($students as $row) {
+                    $reciever_phone = $row['phone'];
+                    $this->sms_model->send_sms($message , $reciever_phone);
+                }
+                foreach($teachers as $row) {
+                    $reciever_phone = $row['phone'];
+                    $this->sms_model->send_sms($message , $reciever_phone);
+                }
+            }
 
             $this->session->set_flashdata('flash_message' , get_phrase('data_updated'));
             redirect(base_url() . 'index.php?admin/noticeboard/', 'refresh');
@@ -1727,8 +1852,28 @@ class Admin extends CI_Controller
             $this->db->where('type' , 'paypal_email');
             $this->db->update('settings' , $data);
 
+            $data['description'] = $this->input->post('currency');
+            $this->db->where('type' , 'currency');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('footer_text');
+            $this->db->where('type' , 'footer_text');
+            $this->db->update('settings' , $data);
+
             $data['description'] = $this->input->post('system_email');
             $this->db->where('type' , 'system_email');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('footer_text');
+            $this->db->where('type' , 'footer_text');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('system_name');
+            $this->db->where('type' , 'system_name');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('language');
+            $this->db->where('type' , 'language');
             $this->db->update('settings' , $data);
 
             $data['description'] = $this->input->post('running_year');
@@ -1842,6 +1987,124 @@ class Admin extends CI_Controller
         
         $this->session->set_flashdata('flash_message' , get_phrase('product_updated_successfully'));
         redirect(base_url() . 'index.php?admin/system_settings');
+    }
+
+    /*****SMS SETTINGS*********/
+    function sms_settings($param1 = '' , $param2 = '')
+    {
+        if ($this->session->userdata('admin_login') != 1)
+            redirect(base_url() . 'index.php?login', 'refresh');
+        if ($param1 == 'clickatell') {
+
+            $data['description'] = $this->input->post('clickatell_user');
+            $this->db->where('type' , 'clickatell_user');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('clickatell_password');
+            $this->db->where('type' , 'clickatell_password');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('clickatell_api_id');
+            $this->db->where('type' , 'clickatell_api_id');
+            $this->db->update('settings' , $data);
+
+            $this->session->set_flashdata('flash_message' , get_phrase('data_updated'));
+            redirect(base_url() . 'index.php?admin/sms_settings/', 'refresh');
+        }
+
+        if ($param1 == 'twilio') {
+
+            $data['description'] = $this->input->post('twilio_account_sid');
+            $this->db->where('type' , 'twilio_account_sid');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('twilio_auth_token');
+            $this->db->where('type' , 'twilio_auth_token');
+            $this->db->update('settings' , $data);
+
+            $data['description'] = $this->input->post('twilio_sender_phone_number');
+            $this->db->where('type' , 'twilio_sender_phone_number');
+            $this->db->update('settings' , $data);
+
+            $this->session->set_flashdata('flash_message' , get_phrase('data_updated'));
+            redirect(base_url() . 'index.php?admin/sms_settings/', 'refresh');
+        }
+
+        if ($param1 == 'active_service') {
+
+            $data['description'] = $this->input->post('active_sms_service');
+            $this->db->where('type' , 'active_sms_service');
+            $this->db->update('settings' , $data);
+
+            $this->session->set_flashdata('flash_message' , get_phrase('data_updated'));
+            redirect(base_url() . 'index.php?admin/sms_settings/', 'refresh');
+        }
+
+        $page_data['page_name']  = 'sms_settings';
+        $page_data['page_title'] = get_phrase('sms_settings');
+        $page_data['settings']   = $this->db->get('settings')->result_array();
+        $this->load->view('backend/index', $page_data);
+    }
+    
+    /*****LANGUAGE SETTINGS*********/
+    function manage_language($param1 = '', $param2 = '', $param3 = '')
+    {
+        if ($this->session->userdata('admin_login') != 1)
+			redirect(base_url() . 'index.php?login', 'refresh');
+		
+		if ($param1 == 'edit_phrase') {
+			$page_data['edit_profile'] 	= $param2;	
+		}
+		if ($param1 == 'update_phrase') {
+			$language	=	$param2;
+			$total_phrase	=	$this->input->post('total_phrase');
+			for($i = 1 ; $i < $total_phrase ; $i++)
+			{
+				//$data[$language]	=	$this->input->post('phrase').$i;
+				$this->db->where('phrase_id' , $i);
+				$this->db->update('language' , array($language => $this->input->post('phrase'.$i)));
+			}
+			redirect(base_url() . 'index.php?admin/manage_language/edit_phrase/'.$language, 'refresh');
+		}
+		if ($param1 == 'do_update') {
+			$language        = $this->input->post('language');
+			$data[$language] = $this->input->post('phrase');
+			$this->db->where('phrase_id', $param2);
+			$this->db->update('language', $data);
+			$this->session->set_flashdata('flash_message', get_phrase('settings_updated'));
+			redirect(base_url() . 'index.php?admin/manage_language/', 'refresh');
+		}
+		if ($param1 == 'add_phrase') {
+			$data['phrase'] = $this->input->post('phrase');
+			$this->db->insert('language', $data);
+			$this->session->set_flashdata('flash_message', get_phrase('settings_updated'));
+			redirect(base_url() . 'index.php?admin/manage_language/', 'refresh');
+		}
+		if ($param1 == 'add_language') {
+			$language = $this->input->post('language');
+			$this->load->dbforge();
+			$fields = array(
+				$language => array(
+					'type' => 'LONGTEXT'
+				)
+			);
+			$this->dbforge->add_column('language', $fields);
+			
+			$this->session->set_flashdata('flash_message', get_phrase('settings_updated'));
+			redirect(base_url() . 'index.php?admin/manage_language/', 'refresh');
+		}
+		if ($param1 == 'delete_language') {
+			$language = $param2;
+			$this->load->dbforge();
+			$this->dbforge->drop_column('language', $language);
+			$this->session->set_flashdata('flash_message', get_phrase('settings_updated'));
+			
+			redirect(base_url() . 'index.php?admin/manage_language/', 'refresh');
+		}
+		$page_data['page_name']        = 'manage_language';
+		$page_data['page_title']       = get_phrase('manage_language');
+		//$page_data['language_phrases'] = $this->db->get('language')->result_array();
+		$this->load->view('backend/index', $page_data);	
     }
     
     /*****BACKUP / RESTORE / DELETE DATA PAGE**********/

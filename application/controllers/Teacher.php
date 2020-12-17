@@ -617,6 +617,7 @@ class Teacher extends CI_Controller
     function attendance_update($class_id = '' , $section_id = '' , $timestamp = '')
     {
         $running_year = $this->db->get_where('settings' , array('type' => 'running_year'))->row()->description;
+        $active_sms_service = $this->db->get_where('settings' , array('type' => 'active_sms_service'))->row()->description;
         $attendance_of_students = $this->db->get_where('attendance' , array(
             'class_id'=>$class_id,'section_id'=>$section_id,'year'=>$running_year,'timestamp'=>$timestamp
         ))->result_array();
@@ -625,6 +626,16 @@ class Teacher extends CI_Controller
             $this->db->where('attendance_id' , $row['attendance_id']);
             $this->db->update('attendance' , array('status' => $attendance_status));
 
+            if ($attendance_status == 2) {
+
+                if ($active_sms_service != '' || $active_sms_service != 'disabled') {
+                    $student_name   = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->name;
+                    $parent_id      = $this->db->get_where('student' , array('student_id' => $row['student_id']))->row()->parent_id;
+                    $receiver_phone = $this->db->get_where('parent' , array('parent_id' => $parent_id))->row()->phone;
+                    $message        = 'Your child' . ' ' . $student_name . 'is absent today.';
+                    $this->sms_model->send_sms($message,$receiver_phone);
+                }
+            }
         }
         $this->session->set_flashdata('flash_message' , get_phrase('attendance_updated'));
         redirect(base_url().'index.php?teacher/manage_attendance_view/'.$class_id.'/'.$section_id.'/'.$timestamp , 'refresh');

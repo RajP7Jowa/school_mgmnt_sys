@@ -7,6 +7,7 @@
 	$header_colour      =   $this->db->get_where('settings' , array('type'=>'header_colour'))->row()->description;
 	$sidebar_colour     =   $this->db->get_where('settings' , array('type'=>'sidebar_colour'))->row()->description;
 	$sidebar_size       =   $this->db->get_where('settings' , array('type'=>'sidebar_size'))->row()->description;
+	$active_sms_service =   $this->db->get_where('settings' , array('type'=>'active_sms_service'))->row()->description;
 	$running_year 		=   $this->db->get_where('settings' , array('type'=>'running_year'))->row()->description;
   ?>
 	

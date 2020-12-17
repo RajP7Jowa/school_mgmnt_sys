@@ -39,6 +39,8 @@ foreach ($edit_data as $row):
                 						echo get_phrase('check');
                 					if ($row2['method'] == 3)
                 						echo get_phrase('card');
+                                    if ($row2['method'] == 'paypal')
+                                        echo 'paypal';
                 				?>
                 			</td>
                 			<td><?php echo date('d M,Y', $row2['timestamp']);?></td>
