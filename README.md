@@ -47,3 +47,12 @@ $db['default'] = array(
 );
 
 ```
+
+Step 3: Go to application > config > config.php file.
+
+Step 4: You will see the base_url name in the $config array. Change the url of the project whatever you desired. As shown below:
+
+``` 
+	$config['base_url'] = 'http://localhost/zschool_ms/';
+```
+
